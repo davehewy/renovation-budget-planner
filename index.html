@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renovation Budget Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --success: #10b981;
+            --success-light: #34d399;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-gradient-1: #0f0f23;
+            --bg-gradient-2: #1a1a3e;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 50%, #1e1e4a 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Animated background orbs */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            top: -200px;
+            right: -200px;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #06b6d4, #10b981);
+            bottom: -100px;
+            left: -100px;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            top: 50%;
+            left: 50%;
+            animation: float 15s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* The Pot - Main Budget Display */
+        .pot-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pot-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        }
+
+        .pot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .pot-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .pot-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        }
+
+        .pot-label h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .pot-label p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .pot-label .editable-budget {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            margin: -0.25rem -0.5rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .pot-label .editable-budget:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .pot-label .editable-budget .edit-icon {
+            opacity: 0;
+            font-size: 0.8rem;
+            transition: opacity 0.2s;
+        }
+
+        .pot-label .editable-budget:hover .edit-icon {
+            opacity: 1;
+        }
+
+        .budget-edit-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 0.25rem 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: inherit;
+            width: 120px;
+        }
+
+        .budget-edit-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .pot-amounts {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .amount-block {
+            text-align: right;
+        }
+
+        .amount-block.remaining .amount {
+            color: var(--success-light);
+        }
+
+        .amount-block.allocated .amount {
+            color: var(--warning);
+        }
+
+        .amount-block.completed .amount {
+            color: var(--primary-light);
+        }
+
+        .amount-block .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .amount-block .amount {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        /* Progress Bar */
+        .pot-progress {
+            height: 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-track {
+            display: flex;
+            height: 100%;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-completed {
+            background: linear-gradient(90deg, var(--success), var(--success-light));
+            height: 100%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .progress-completed::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        .progress-allocated {
+            background: linear-gradient(90deg, var(--warning), #fbbf24);
+            height: 100%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Add Section */
+        .add-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(20px);
+        }
+
+        .add-section h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .add-form {
+            display: grid;
+            grid-template-columns: 1fr 200px auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .add-form.project-form {
+            grid-template-columns: 1fr 150px 180px auto;
+        }
+
+        @media (max-width: 768px) {
+            .add-form {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 0.875rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-group select option {
+            background: var(--bg-gradient-2);
+        }
+
+        /* Color picker */
+        .color-options {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: white;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Project Cards Grid */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .project-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 1.75rem;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            animation: cardEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes cardEnter {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .project-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+        }
+
+        .project-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .project-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .project-card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .project-card-name {
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .project-card-items {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .project-card-budget {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1rem;
+        }
+
+        .project-budget-spent {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .project-budget-total {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .project-progress {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .project-progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .project-progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Project Detail View */
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .back-button:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .project-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .project-detail-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .project-detail-info h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .project-detail-info p {
+            color: var(--text-secondary);
+        }
+
+        /* Items List */
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem 1.5rem;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            transition: all 0.2s;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .item-row:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .item-row.completed {
+            opacity: 0.6;
+        }
+
+        .item-row.completed .item-name {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        .item-checkbox {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 2px solid var(--card-border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .item-checkbox:hover {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .item-row.completed .item-checkbox {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .item-checkbox svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+            stroke-width: 3;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .item-row.completed .item-checkbox svg {
+            opacity: 1;
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-name {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.125rem;
+        }
+
+        .item-amount {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+
+        .item-row.completed .item-amount {
+            color: var(--success-light);
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-icon.delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: rgba(30, 30, 60, 0.95);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            backdrop-filter: blur(20px);
+            animation: toastEnter 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes toastEnter {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast.success {
+            border-left: 3px solid var(--success);
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        /* Project budget summary in detail view */
+        .project-budget-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .budget-stat {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .budget-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .budget-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .budget-stat.completed .budget-stat-value {
+            color: var(--success-light);
+        }
+
+        .budget-stat.pending .budget-stat-value {
+            color: var(--warning);
+        }
+
+        .budget-stat.remaining .budget-stat-value {
+            color: var(--primary-light);
+        }
+
+        @media (max-width: 768px) {
+            .project-budget-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .project-budget-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="container">
+        <header>
+            <h1>Renovation Budget Planner</h1>
+            <p>Plan your dream home, one project at a time</p>
+        </header>
+
+        <!-- Main Budget Pot (Always visible) -->
+        <div class="pot-container">
+            <div class="pot-header">
+                <div class="pot-title">
+                    <div class="pot-icon">🏡</div>
+                    <div class="pot-label">
+                        <h2>Your Budget</h2>
+                        <p>
+                            <span class="editable-budget" id="editable-budget" onclick="editTotalBudget()">
+                                <span id="total-budget-display">£20,000</span> to transform your space
+                                <span class="edit-icon">✏️</span>
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <div class="pot-amounts">
+                    <div class="amount-block completed">
+                        <div class="label">Completed</div>
+                        <div class="amount" id="total-completed">£0</div>
+                    </div>
+                    <div class="amount-block allocated">
+                        <div class="label">Planned</div>
+                        <div class="amount" id="total-allocated">£0</div>
+                    </div>
+                    <div class="amount-block remaining">
+                        <div class="label">Remaining</div>
+                        <div class="amount" id="total-remaining">£20,000</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pot-progress">
+                <div class="progress-track">
+                    <div class="progress-completed" id="main-progress-completed" style="width: 0%"></div>
+                    <div class="progress-allocated" id="main-progress-allocated" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="progress-labels">
+                <span>✓ Done</span>
+                <span>◐ Planned</span>
+                <span>○ Available</span>
+            </div>
+        </div>
+
+        <!-- Projects List View -->
+        <div class="view active" id="projects-view">
+            <div class="add-section">
+                <h3>✨ Create a New Project</h3>
+                <form class="add-form project-form" id="add-project-form">
+                    <div class="form-group">
+                        <label for="project-name">Project Name</label>
+                        <input type="text" id="project-name" placeholder="e.g., Kitchen Renovation" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-budget">Budget (£)</label>
+                        <input type="number" id="project-budget" placeholder="0" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Colour</label>
+                        <div class="color-options" id="color-options">
+                            <div class="color-option selected" data-color="#6366f1" style="background: linear-gradient(135deg, #6366f1, #818cf8)"></div>
+                            <div class="color-option" data-color="#10b981" style="background: linear-gradient(135deg, #10b981, #34d399)"></div>
+                            <div class="color-option" data-color="#f59e0b" style="background: linear-gradient(135deg, #f59e0b, #fbbf24)"></div>
+                            <div class="color-option" data-color="#ef4444" style="background: linear-gradient(135deg, #ef4444, #f87171)"></div>
+                            <div class="color-option" data-color="#8b5cf6" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa)"></div>
+                            <div class="color-option" data-color="#06b6d4" style="background: linear-gradient(135deg, #06b6d4, #22d3ee)"></div>
+                            <div class="color-option" data-color="#ec4899" style="background: linear-gradient(135deg, #ec4899, #f472b6)"></div>
+                            <div class="color-option" data-color="#84cc16" style="background: linear-gradient(135deg, #84cc16, #a3e635)"></div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </form>
+            </div>
+
+            <section>
+                <div class="section-header">
+                    <h3>📋 Your Projects</h3>
+                </div>
+                <div class="projects-grid" id="projects-grid">
+                    <div class="empty-state" id="projects-empty">
+                        <div class="empty-state-icon">🏠</div>
+                        <h3>No projects yet</h3>
+                        <p>Create your first project above to start planning your renovation.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Project Detail View -->
+        <div class="view" id="project-detail-view">
+            <div class="back-button" onclick="showProjectsView()">
+                ← Back to all projects
+            </div>
+
+            <div class="project-detail-header">
+                <div class="project-detail-icon" id="detail-icon">🔨</div>
+                <div class="project-detail-info">
+                    <h2 id="detail-name">Project Name</h2>
+                    <p id="detail-item-count">0 items</p>
+                </div>
+            </div>
+
+            <div class="project-budget-summary">
+                <div class="budget-stat">
+                    <div class="budget-stat-value" id="detail-budget">£0</div>
+                    <div class="budget-stat-label">Project Budget</div>
+                </div>
+                <div class="budget-stat pending">
+                    <div class="budget-stat-value" id="detail-allocated">£0</div>
+                    <div class="budget-stat-label">Allocated</div>
+                </div>
+                <div class="budget-stat remaining">
+                    <div class="budget-stat-value" id="detail-remaining">£0</div>
+                    <div class="budget-stat-label">Unallocated</div>
+                </div>
+                <div class="budget-stat completed">
+                    <div class="budget-stat-value" id="detail-completed">£0</div>
+                    <div class="budget-stat-label">Completed</div>
+                </div>
+            </div>
+
+            <div class="add-section">
+                <h3>➕ Add Item to Project</h3>
+                <form class="add-form" id="add-item-form">
+                    <div class="form-group">
+                        <label for="item-name">Item Description</label>
+                        <input type="text" id="item-name" placeholder="e.g., Granite worktops" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-amount">Cost (£)</label>
+                        <input type="number" id="item-amount" placeholder="0" min="1" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </form>
+            </div>
+
+            <section>
+                <div class="section-header">
+                    <h3>📝 Items</h3>
+                </div>
+                <div class="items-list" id="items-list">
+                    <div class="empty-state" id="items-empty">
+                        <div class="empty-state-icon">📦</div>
+                        <h3>No items yet</h3>
+                        <p>Add your first item to this project above.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // State
+        let totalBudget = parseInt(localStorage.getItem('renovationTotalBudget')) || 20000;
+        let projects = JSON.parse(localStorage.getItem('renovationProjects') || '[]');
+        let currentProjectId = null;
+        let selectedColor = '#6366f1';
+
+        // DOM Elements
+        const projectsView = document.getElementById('projects-view');
+        const detailView = document.getElementById('project-detail-view');
+        const projectsGrid = document.getElementById('projects-grid');
+        const projectsEmpty = document.getElementById('projects-empty');
+        const itemsList = document.getElementById('items-list');
+        const itemsEmpty = document.getElementById('items-empty');
+        const addProjectForm = document.getElementById('add-project-form');
+        const addItemForm = document.getElementById('add-item-form');
+        const colorOptions = document.querySelectorAll('.color-option');
+
+        // Confetti setup
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        let confettiParticles = [];
+
+        class Confetti {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 8 + 4;
+                this.speedX = (Math.random() - 0.5) * 12;
+                this.speedY = Math.random() * -15 - 5;
+                this.gravity = 0.5;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = (Math.random() - 0.5) * 15;
+                this.color = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'][Math.floor(Math.random() * 6)];
+                this.opacity = 1;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.speedY += this.gravity;
+                this.rotation += this.rotationSpeed;
+                this.opacity -= 0.01;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 0.6);
+                ctx.restore();
+            }
+        }
+
+        function launchConfetti(x, y) {
+            for (let i = 0; i < 50; i++) {
+                confettiParticles.push(new Confetti(x, y));
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confettiParticles = confettiParticles.filter(p => p.opacity > 0);
+            confettiParticles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            if (confettiParticles.length > 0) {
+                requestAnimationFrame(animateConfetti);
+            }
+        }
+
+        // Toast
+        function showToast(message, icon = '✓') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast success';
+            toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Color selection
+        colorOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                colorOptions.forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                selectedColor = opt.dataset.color;
+            });
+        });
+
+        // Get lighter version of color for gradients
+        function getLighterColor(hex) {
+            const colors = {
+                '#6366f1': '#818cf8',
+                '#10b981': '#34d399',
+                '#f59e0b': '#fbbf24',
+                '#ef4444': '#f87171',
+                '#8b5cf6': '#a78bfa',
+                '#06b6d4': '#22d3ee',
+                '#ec4899': '#f472b6',
+                '#84cc16': '#a3e635'
+            };
+            return colors[hex] || hex;
+        }
+
+        // Calculate global totals (based on project budgets, not individual items)
+        function calculateGlobalTotals() {
+            let totalProjectBudgets = 0;
+            let completedItems = 0;
+
+            projects.forEach(project => {
+                totalProjectBudgets += project.budget || 0;
+                project.items.forEach(item => {
+                    if (item.completed) {
+                        completedItems += item.amount;
+                    }
+                });
+            });
+
+            const allocated = totalProjectBudgets - completedItems;
+            return {
+                completed: completedItems,
+                allocated: allocated > 0 ? allocated : 0,
+                remaining: totalBudget - totalProjectBudgets
+            };
+        }
+
+        // Calculate project totals
+        function calculateProjectTotals(project) {
+            const completed = project.items.filter(i => i.completed).reduce((sum, i) => sum + i.amount, 0);
+            const pending = project.items.filter(i => !i.completed).reduce((sum, i) => sum + i.amount, 0);
+            const allocated = completed + pending;
+            const budget = project.budget || 0;
+            const remaining = budget - allocated;
+            return { completed, pending, allocated, budget, remaining };
+        }
+
+        // Update main pot display
+        function updateMainPot() {
+            const { completed, allocated, remaining } = calculateGlobalTotals();
+
+            document.getElementById('total-budget-display').textContent = `£${totalBudget.toLocaleString()}`;
+            document.getElementById('total-completed').textContent = `£${completed.toLocaleString()}`;
+            document.getElementById('total-allocated').textContent = `£${allocated.toLocaleString()}`;
+            document.getElementById('total-remaining').textContent = `£${remaining.toLocaleString()}`;
+
+            const completedPercent = (completed / totalBudget) * 100;
+            const allocatedPercent = (allocated / totalBudget) * 100;
+
+            document.getElementById('main-progress-completed').style.width = `${completedPercent}%`;
+            document.getElementById('main-progress-allocated').style.width = `${allocatedPercent}%`;
+        }
+
+        // Save state
+        function saveState() {
+            localStorage.setItem('renovationProjects', JSON.stringify(projects));
+            localStorage.setItem('renovationTotalBudget', totalBudget.toString());
+        }
+
+        // Edit total budget
+        window.editTotalBudget = function() {
+            const container = document.getElementById('editable-budget');
+            const currentDisplay = document.getElementById('total-budget-display');
+
+            // Calculate minimum budget (sum of all project budgets)
+            const minBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+
+            // Create input
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'budget-edit-input';
+            input.value = totalBudget;
+            input.min = minBudget;
+
+            // Hide current display, show input
+            currentDisplay.style.display = 'none';
+            container.querySelector('.edit-icon').style.display = 'none';
+            container.insertBefore(input, currentDisplay);
+            input.focus();
+            input.select();
+
+            // Prevent click from bubbling
+            input.onclick = (e) => e.stopPropagation();
+
+            const finishEdit = () => {
+                const newBudget = parseInt(input.value);
+
+                if (newBudget && newBudget >= minBudget) {
+                    totalBudget = newBudget;
+                    saveState();
+                    updateMainPot();
+                    showToast(`Budget updated to £${totalBudget.toLocaleString()}`, '✨');
+                } else if (newBudget < minBudget) {
+                    showToast(`Budget can't be less than £${minBudget.toLocaleString()} (already allocated to projects)`, '⚠️');
+                }
+
+                // Restore display
+                currentDisplay.textContent = `£${totalBudget.toLocaleString()}`;
+                currentDisplay.style.display = '';
+                container.querySelector('.edit-icon').style.display = '';
+                input.remove();
+            };
+
+            input.onblur = finishEdit;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    finishEdit();
+                } else if (e.key === 'Escape') {
+                    currentDisplay.style.display = '';
+                    container.querySelector('.edit-icon').style.display = '';
+                    input.remove();
+                }
+            };
+        };
+
+        // Render projects grid
+        function renderProjects() {
+            // Clear existing project cards
+            const cards = projectsGrid.querySelectorAll('.project-card');
+            cards.forEach(card => card.remove());
+
+            if (projects.length === 0) {
+                projectsEmpty.style.display = 'block';
+                return;
+            }
+
+            projectsEmpty.style.display = 'none';
+
+            projects.forEach(project => {
+                const { completed, pending, allocated, budget, remaining } = calculateProjectTotals(project);
+                const completedCount = project.items.filter(i => i.completed).length;
+                const totalCount = project.items.length;
+                const allocatedPercent = budget > 0 ? (allocated / budget) * 100 : 0;
+                const completedPercent = budget > 0 ? (completed / budget) * 100 : 0;
+
+                const card = document.createElement('div');
+                card.className = 'project-card';
+                card.dataset.id = project.id;
+                card.style.setProperty('--project-color', project.color);
+                card.innerHTML = `
+                    <style>
+                        .project-card[data-id="${project.id}"]::before {
+                            background: linear-gradient(90deg, ${project.color}, ${getLighterColor(project.color)});
+                        }
+                        .project-card[data-id="${project.id}"] .project-card-icon {
+                            background: linear-gradient(135deg, ${project.color}, ${getLighterColor(project.color)});
+                        }
+                        .project-card[data-id="${project.id}"] .project-progress-bar {
+                            background: linear-gradient(90deg, ${project.color}, ${getLighterColor(project.color)});
+                        }
+                    </style>
+                    <div class="project-card-header">
+                        <div class="project-card-icon">🔨</div>
+                        <div class="project-card-actions">
+                            <button class="btn-icon delete" onclick="event.stopPropagation(); deleteProject('${project.id}')" title="Delete project">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="project-card-name">${escapeHtml(project.name)}</div>
+                    <div class="project-card-items">${totalCount} item${totalCount !== 1 ? 's' : ''} · ${completedCount} completed</div>
+                    <div class="project-card-budget">
+                        <span class="project-budget-spent">£${allocated.toLocaleString()}</span>
+                        <span class="project-budget-total">of £${budget.toLocaleString()}</span>
+                    </div>
+                    <div class="project-progress">
+                        <div class="project-progress-bar" style="width: ${allocatedPercent}%"></div>
+                    </div>
+                    <div class="project-progress-label">
+                        <span>£${remaining.toLocaleString()} unallocated</span>
+                        <span>£${completed.toLocaleString()} done</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => openProject(project.id));
+                projectsGrid.appendChild(card);
+            });
+        }
+
+        // Render items list
+        function renderItems() {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            // Update header
+            document.getElementById('detail-name').textContent = project.name;
+            document.getElementById('detail-icon').style.background = `linear-gradient(135deg, ${project.color}, ${getLighterColor(project.color)})`;
+
+            const { completed, pending, allocated, budget, remaining } = calculateProjectTotals(project);
+            const itemCount = project.items.length;
+
+            document.getElementById('detail-item-count').textContent = `${itemCount} item${itemCount !== 1 ? 's' : ''}`;
+            document.getElementById('detail-budget').textContent = `£${budget.toLocaleString()}`;
+            document.getElementById('detail-allocated').textContent = `£${allocated.toLocaleString()}`;
+            document.getElementById('detail-remaining').textContent = `£${remaining.toLocaleString()}`;
+            document.getElementById('detail-completed').textContent = `£${completed.toLocaleString()}`;
+
+            // Clear existing items
+            const rows = itemsList.querySelectorAll('.item-row');
+            rows.forEach(row => row.remove());
+
+            if (project.items.length === 0) {
+                itemsEmpty.style.display = 'block';
+                return;
+            }
+
+            itemsEmpty.style.display = 'none';
+
+            // Sort: uncompleted first
+            const sortedItems = [...project.items].sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                return b.createdAt - a.createdAt;
+            });
+
+            sortedItems.forEach(item => {
+                const row = document.createElement('div');
+                row.className = `item-row ${item.completed ? 'completed' : ''}`;
+                row.dataset.id = item.id;
+                row.innerHTML = `
+                    <div class="item-checkbox" onclick="toggleItem('${item.id}', event)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="item-info">
+                        <div class="item-name">${escapeHtml(item.name)}</div>
+                    </div>
+                    <div class="item-amount">£${item.amount.toLocaleString()}</div>
+                    <button class="btn-icon delete" onclick="deleteItem('${item.id}')" title="Delete item">🗑️</button>
+                `;
+                itemsList.appendChild(row);
+            });
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // View management
+        function showProjectsView() {
+            currentProjectId = null;
+            projectsView.classList.add('active');
+            detailView.classList.remove('active');
+            renderProjects();
+        }
+
+        function openProject(id) {
+            currentProjectId = id;
+            projectsView.classList.remove('active');
+            detailView.classList.add('active');
+            renderItems();
+        }
+
+        // Add project
+        addProjectForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('project-name').value.trim();
+            const budget = parseInt(document.getElementById('project-budget').value);
+
+            // Check if budget fits in remaining pot
+            const { remaining } = calculateGlobalTotals();
+            if (budget > remaining) {
+                showToast(`That exceeds your remaining pot of £${remaining.toLocaleString()}`, '⚠️');
+                return;
+            }
+
+            const project = {
+                id: Date.now().toString(),
+                name,
+                budget,
+                color: selectedColor,
+                items: [],
+                createdAt: Date.now()
+            };
+
+            projects.push(project);
+            saveState();
+            updateMainPot();
+            renderProjects();
+
+            addProjectForm.reset();
+            colorOptions.forEach(o => o.classList.remove('selected'));
+            colorOptions[0].classList.add('selected');
+            selectedColor = '#6366f1';
+
+            showToast(`"${name}" project created with £${budget.toLocaleString()} budget!`, '✨');
+        });
+
+        // Add item
+        addItemForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            const name = document.getElementById('item-name').value.trim();
+            const amount = parseInt(document.getElementById('item-amount').value);
+
+            const { remaining } = calculateProjectTotals(project);
+            if (amount > remaining) {
+                showToast(`That exceeds this project's remaining budget of £${remaining.toLocaleString()}`, '⚠️');
+                return;
+            }
+
+            const item = {
+                id: Date.now().toString(),
+                name,
+                amount,
+                completed: false,
+                createdAt: Date.now()
+            };
+
+            project.items.push(item);
+            saveState();
+            updateMainPot();
+            renderItems();
+            renderProjects();
+
+            addItemForm.reset();
+            showToast(`"${name}" added!`, '➕');
+        });
+
+        // Toggle item completion
+        window.toggleItem = function(itemId, event) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            const item = project.items.find(i => i.id === itemId);
+            if (!item) return;
+
+            item.completed = !item.completed;
+            saveState();
+            updateMainPot();
+            renderItems();
+            renderProjects();
+
+            if (item.completed) {
+                const rect = event.target.getBoundingClientRect();
+                launchConfetti(rect.left + rect.width / 2, rect.top);
+                showToast(`"${item.name}" completed! 🎉`, '🎊');
+            }
+        };
+
+        // Delete item
+        window.deleteItem = function(itemId) {
+            const project = projects.find(p => p.id === currentProjectId);
+            if (!project) return;
+
+            const item = project.items.find(i => i.id === itemId);
+            if (item && confirm(`Remove "${item.name}"?`)) {
+                project.items = project.items.filter(i => i.id !== itemId);
+                saveState();
+                updateMainPot();
+                renderItems();
+                showToast(`"${item.name}" removed`, '🗑️');
+            }
+        };
+
+        // Delete project
+        window.deleteProject = function(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (project && confirm(`Delete "${project.name}" and all its items?`)) {
+                projects = projects.filter(p => p.id !== projectId);
+                saveState();
+                updateMainPot();
+                renderProjects();
+                showToast(`"${project.name}" deleted`, '🗑️');
+            }
+        };
+
+        // Initialize
+        document.getElementById('total-budget-display').textContent = `£${totalBudget.toLocaleString()}`;
+        updateMainPot();
+        renderProjects();
+    </script>
+</body>
+</html>
